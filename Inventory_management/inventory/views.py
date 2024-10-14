@@ -1,7 +1,7 @@
 from rest_framework import generics, filters 
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import InventoryItem, InventoryChangeLog
-from .serializers import InventoryChangeLogSerializer, InventoryItemSerializer, UserSerializer
+from .serializers import InventoryChangeLogSerializer, InventoryItemSerializer, UserSerializer, InventoryItemsQuantitySerializer
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
 
@@ -48,33 +48,16 @@ class InventoryItemListCreate(generics.ListCreateAPIView):
         ordering = self.request.query_params.get('ordering', 'name')
         return queryset.order_by(ordering)
 
-    # def perform_create(self, serializer):
-    #     inventory_item = serializer.save(user=self.request.user)
-    #     # Log the initial inventory quantity
-    #     InventoryChangeLog.objects.create(
-    #         inventory_item=inventory_item,
-    #         user=self.request.user,
-    #         quantity_change=inventory_item.quantity  # Log initial quantity
-    #     )
+    def perform_create(self, serializer):
+        inventory_item = serializer.save(user=self.request.user)
+        # # Log the initial inventory quantity
+        # InventoryChangeLog.objects.create(
+        #     inventory_item=inventory_item,
+        #     user=self.request.user,
+        #     quantity_change=inventory_item.quantity  # Log initial quantity
+        # )
 
     
-    # def perform_update(self, serializer):
-    #      # Retrieve the current instance from the database
-    #     instance = InventoryItem.objects.get(pk=instance.pk)
-    #     previous_quantity = instance.quantity # Store previous quantity
-    #     updated_instance = serializer.save()
-    #     # Calculate quantity difference (new - old)
-
-    #     # previous_quantity = InventoryItem.objects.get(pk=instance.pk).quantity
-    #     quantity_difference = updated_instance.quantity - previous_quantity
-        
-    #     if quantity_difference != 0:
-    #         # Log the change in quantity
-    #         InventoryChangeLog.objects.create(
-    #             inventory_item=instance,
-    #             user=self.request.user,
-    #             quantity_change=quantity_difference
-    #         )
 
 class InventoryItemDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = InventoryItem.objects.all()
@@ -104,27 +87,6 @@ class InventoryItemDetail(generics.RetrieveUpdateDestroyAPIView):
             )
         return instance
     
-    # def update(self, request, *args, **kwargs):
-    #     # Get the instance (inventory item) to be updated
-    #     instance = self.get_object()
-    #     old_quantity = instance.quantity  # Store the old quantity
-
-    #     # Call the superclass update method
-    #     response = super().update(request, *args, **kwargs)
-
-    #     # Calculate the quantity change
-    #     new_quantity = instance.quantity  # This is updated after calling super().update
-    #     quantity_change = new_quantity - old_quantity
-
-    #     # Log the change if the quantity has changed
-    #     if quantity_change != 0:
-    #         InventoryChangeLog.objects.create(
-    #             inventory_item=instance,
-    #             user=request.user.username,  # or request.user if you want the full User object
-    #             quantity_change=quantity_change
-    #         )
-
-    #     return response
     
 
 class UserListCreateView(generics.ListCreateAPIView):
@@ -152,3 +114,12 @@ class InventoryChangeLogList(generics.ListAPIView):
         return InventoryChangeLog.objects.filter(inventory_item__id=inventory_item_id).order_by('-timestamp')
     
 
+class InventoryItemQuantity(generics.ListAPIView):
+    serializer_class = InventoryItemsQuantitySerializer
+    permission_classes = [IsAuthenticated]
+    queryset = InventoryItem.objects.all()
+
+class InventoryItemQuantityDetailView(generics.RetrieveAPIView):
+    serializer_class = InventoryItemsQuantitySerializer
+    permission_classes = [IsAuthenticated]
+    queryset = InventoryItem.objects.all()

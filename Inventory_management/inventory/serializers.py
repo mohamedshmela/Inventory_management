@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import InventoryItem, InventoryChangeLog
 from django.contrib.auth.models import User
+from rest_framework.validators import UniqueValidator
 
 class InventoryItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -8,12 +9,15 @@ class InventoryItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description', 'quantity', 'price', 'category', 'date_added', 'last_updated']
 
 class UserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        required = True,
+        validators=[UniqueValidator(queryset=User.objects.all())]
+    )
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'password']
         extra_kwargs = {'password': {'write_only': True}}
 
-    # Override create to handle password hashing
     def create(self, validated_data):
         user = User(
             username=validated_data['username'],
@@ -23,7 +27,6 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
-    # Override update to handle password hashing
     def update(self, instance, validated_data):
         instance.username = validated_data.get('username', instance.username)
         instance.email = validated_data.get('email', instance.email)
@@ -40,3 +43,8 @@ class InventoryChangeLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = InventoryChangeLog
         fields = ['inventory_item', 'user', 'quantity_change', 'timestamp']
+
+class InventoryItemsQuantitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InventoryItem
+        fields = ['id', 'name' , 'quantity']
